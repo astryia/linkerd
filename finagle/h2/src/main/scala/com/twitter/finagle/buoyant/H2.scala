@@ -56,12 +56,11 @@ object H2 extends Client[Request, Response] with Server[Request, Response] {
     ): Client = copy(stack, params)
 
     private[this] lazy val param.Stats(statsReceiver) = params[param.Stats]
-    private[this] lazy val FailureDetector.Param(detectorCfg) = params[FailureDetector.Param]
 
     protected def newDispatcher(trans: Http2FrameTransport {
       type Context <: self.Context
     }): Service[Request, Response] = {
-      new Netty4ClientDispatcher(trans, Some(detectorCfg), statsReceiver)
+      new Netty4ClientDispatcher(trans, None, statsReceiver)
     }
   }
 
