@@ -17,6 +17,7 @@ import com.twitter.finagle.liveness.FailureDetector.ThresholdConfig
 import com.twitter.finagle.liveness.FailureDetector.NullConfig
 import com.twitter.finagle.netty4.ssl.server.Netty4ServerEngineFactory
 import com.twitter.finagle.stack.nilStack
+import com.twitter.finagle.StackParams;
 import com.twitter.finagle.tracing.TraceInitializerFilter
 import com.twitter.finagle.{ServiceFactory, Stack, param}
 import com.twitter.logging.Policy
@@ -207,7 +208,7 @@ object FailureThresholdConfig {
   val DefaultMinPeriod = 5.seconds
   val DefaultCloseTimeout = 4.seconds
 
-  def defaultStackParam = StackParams.empty + FailureDetector.Param(NullConfig())
+  def defaultStackParam = StackParams.empty + FailureDetector.Param(NullConfig)
 }
 
 @JsonTypeInfo(
