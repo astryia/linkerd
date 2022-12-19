@@ -12,6 +12,9 @@ import com.twitter.finagle.buoyant.h2.{param => h2Param, _}
 import com.twitter.finagle.buoyant.{ParamsMaybeWith, PathMatcher}
 import com.twitter.finagle.client.StackClient
 import com.twitter.finagle.filter.DtabStatsFilter
+import com.twitter.finagle.liveness.FailureDetector
+import com.twitter.finagle.liveness.FailureDetector.ThresholdConfig
+import com.twitter.finagle.liveness.FailureDetector.NullConfig
 import com.twitter.finagle.netty4.ssl.server.Netty4ServerEngineFactory
 import com.twitter.finagle.stack.nilStack
 import com.twitter.finagle.tracing.TraceInitializerFilter
@@ -166,12 +169,14 @@ class H2PrefixConfig(prefix: PathMatcher) extends PrefixConfig(prefix) with H2Cl
 trait H2ClientConfig extends ClientConfig with H2EndpointConfig {
   var forwardClientCert: Option[Boolean] = None
   var requestAuthorizers: Option[Seq[H2RequestAuthorizerConfig]] = None
+  var failureThreshold: Option[FailureThresholdConfig] = None
 
   @JsonIgnore
   override def params(vars: Map[String, String]): Stack.Params =
     withEndpointParams(super.params(vars))
       .maybeWith(forwardClientCert.map(ForwardClientCertFilter.Enabled))
       .maybeWith(requestAuthorizerParam)
+      .maybeWith(failureThreshold.map(_.params).getOrElse(FailureThresholdConfig.defaultStackParam))
 
   @JsonIgnore
   private[this] def requestAuthorizerParam = requestAuthorizers.map { configs =>
@@ -181,6 +186,28 @@ trait H2ClientConfig extends ClientConfig with H2EndpointConfig {
       }
     H2RequestAuthorizerConfig.param.RequestAuthorizer(authorizerStack)
   }
+}
+
+case class FailureThresholdConfig(
+  minPeriodMs: Option[Int],
+    closeTimeoutMs: Option[Int]
+) {
+  @JsonIgnore
+  def params: Stack.Params = {
+    val thresholdConfig = ThresholdConfig(
+      minPeriodMs.map(_.milliseconds).getOrElse(FailureThresholdConfig.DefaultMinPeriod),
+      closeTimeoutMs.map(_.milliseconds).getOrElse(FailureThresholdConfig.DefaultCloseTimeout)
+    )
+    StackParams.empty + FailureDetector.Param(thresholdConfig)
+  }
+}
+
+object FailureThresholdConfig {
+
+  val DefaultMinPeriod = 5.seconds
+  val DefaultCloseTimeout = 4.seconds
+
+  def defaultStackParam = StackParams.empty + FailureDetector.Param(NullConfig())
 }
 
 @JsonTypeInfo(
