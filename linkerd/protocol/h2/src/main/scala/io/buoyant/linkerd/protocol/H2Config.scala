@@ -177,7 +177,7 @@ trait H2ClientConfig extends ClientConfig with H2EndpointConfig {
     withEndpointParams(super.params(vars))
       .maybeWith(forwardClientCert.map(ForwardClientCertFilter.Enabled))
       .maybeWith(requestAuthorizerParam)
-      .maybeWith(failureThreshold.map(_.params).getOrElse(FailureThresholdConfig.defaultStackParam))
+      .maybeWith(failureThreshold.map(_.params).getOrElse(Some(FailureThresholdConfig.defaultStackParam)))
 
   @JsonIgnore
   private[this] def requestAuthorizerParam = requestAuthorizers.map { configs =>
